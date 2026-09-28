@@ -1,0 +1,1145 @@
+---
+title: "Matematica Attuariale"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+    code_folding: hide
+    code_download: true
+runtime: shiny
+---
+
+```{=html}
+<style>
+.shiny-frame {
+    height: 1500px !important;
+}
+</style>
+```
+
+```{r setup, include=FALSE}
+library(shiny)
+library(flexdashboard)
+library(DT)
+library(htmltools) 
+library(plotly)
+```
+
+Formulario
+=======================================================================
+
+Row {data-width=1000}
+-----------------------------------------------------------------------
+
+### **Elementi di una Tavola di Mortalità** 
+
+* $x=$ età ($x=0, 1, 2,...,\omega$)
+
+* $\omega=$ età massima raggiunta nella tavola in uso (o età estrema), tale che $l_\omega>0$ e $l_{\omega+1}=0$ (nelle tavole $\omega=110$) 
+
+* $l_x=$ numero di individui della generazione iniziale che arrivano vivi all'età $x$
+
+* $l_0$ è detta radice dela tavola, rappresenta la generazione iniziale. Solitamente $l_0=100.000$
+
+* $dx=l_x-l_{x+1}=$ numero di decessi tra le età esatte $x$ e $x+1$, con $\sum\limits_{x=0}^{\omega} d_x = l_0$
+
+* $q_x = \frac{d_x}{l_x}=$ probabilità di decesso entro $1$ anno per una persona di età $x$
+
+Row {data-width=1000}
+-----------------------------------------------------------------------
+
+### **Formule Biometriche** 
+<br>
+
+* **Probabilità di essere in vita ad età $x+1$**
+
+$$
+p_x=1-q_x=\frac{l_x}{l_{x+1}}
+$$
+
+* **Probabilità di essere in vita ad età $x+h$**
+
+$$
+{}_h p_x = p_x \cdot p_{x+1} \cdot ... \cdot p_{x+h-1} = \frac{l_{x+h}}{l_x}
+$$
+
+* **Probabilità di decesso prima dell'età $x+h$**
+
+$$
+{}_h q_x = 1 - {}_h p_x = \frac{l_x - l_{x+h}}{l_x}
+$$
+
+* **Probabilità di decesso tra le età $x+h$ e $x+h+k$**
+
+$$
+{}_{h|k} q_x = {}_h p_x \cdot {}_kq_{x+h} = \frac{l_{x+h} - l_{x+h+k}}{l_x}
+$$
+
+Row {data-width=1000}
+-----------------------------------------------------------------------
+
+### **Premi Unici $\Pi$**
+
+* **Assicurazione di Capitale Differito:**
+Paga un *capitale* $S$ a una *scadenza* $m$ solo se l'assicurato è **ancora in vita** in $m$. Se l'assicurato muore prima, la compagnia non versa nulla e trattiene i premi.
+
+$$
+\Pi = S (1+i)^{-m}{}_{m}p_{x} = S{}_{m}E_{x}
+$$
+
+* **Rendita Vitalizia Temporanea Anticipata:**
+Paga una *rata fissa* $b$ all'inizio di ogni anno, finché l'assicurato è in vita, per al più $m$ anni. La prima rata viene pagata immediatamente alla firma del contratto.
+
+$$
+\Pi=b\ddot{a}_{x:m\rceil} =b \sum_{h=0}^{m-1} (1+i)^{-h}{}_{h}p_{x} = \sum_{h=0}^{m-1} {}_{h}E_{x}
+$$
+
+* **Rendita Vitalizia Illimitata Anticipata:**
+Paga una *rata fissa* $b$ all'inizio di ogni anno, per **tutta la vita** dell'assicurato. La prima rata viene pagata immediatamente alla firma del contratto.
+
+$$
+\Pi=b\ddot{a}_x = b\sum_{h=0}^{\omega - x} (1+i)^{-h}{}_{h}p_{x} = \sum_{h=0}^{\omega - x} {}_{h}E_{x}
+$$
+
+* **Assicurazione Temporanea Caso Morte (TCM):**
+Paga un *capitale* $C$ solo se l'assicurato decede entro la *scadenza* $m$. Se l'assicurato è ancora in vita a scadenza, la compagnia trattiene i premi.
+
+$$
+\Pi =C\sum_{h=0}^{m-1} (1+i)^{-(h+1)}{}_{h|1}q_{x}=C{}_{m}A_{x}
+$$
+
+* **Assicurazione a Vita Intera Caso Morte**
+Paga un *capitale* $C$ alla fine dell'anno di decesso dell'assicurato, in **qualsiasi momento** questo avvenga. Storicamente veniva stipulata per far fronte alle tasse di successione. Il pagamento della prestazione è certo
+
+$$
+\Pi = C\sum_{h=0}^{\omega-x} (1+i)^{-(h+1)}{}_{h|1}q_{x} = C{}A_{x}
+$$
+
+* **Assicurazione Mista:**
+Si tratta di una *combinazione* tra un'assicurazione di capitale differito e una di temporanea caso morte. Paga un *capitale* $C$ alla fine dell'anno di decesso se l'assicurato decede entro la *scadenza* $m$, oppure un *capitale* $S$ a scadenza se l'assicurato è ancora in vita. Se le due prestazioni coincidono ($C=S$) è detta **Mista Ordinaria**. Anche in questo caso il pagamento è certo
+
+$$
+\Pi = C{}_{m}A_{x}+S{}_{m}E_{x}=A_{x,m\rceil}
+$$
+
+Row {data-width=1000}
+-----------------------------------------------------------------------
+
+### **Premi Costanti Annui $P(s)$** *(o premi periodici livellati)*
+
+Per evitare di dover pagare un premio unico alla stipula del contratto che può rivelarsi anche molto elevato, l'assicurato può optare per il pagamento di un premio ricorrente costante una volta l'anno, in modo da ammortizzare il premio della polizza su più anni. Il numero di pagamenti annuali è indicato con $s, s\le m$ (per il principio di finanziamento il pagamento dei premi non può avvenire successivamente alla scadenza del contratto). L'equità attuariale tra beneficio è premio è data dividendo il premio unico per una rendita vitalizia temporanea anticipata fino a $s$:
+
+$$
+P(s)=\frac{\Pi}{\ddot{a}_{x:s\rceil}}
+$$
+
+Se $s=m$, allora $P(m)=P$.
+
+Row {data-width=1000}
+-----------------------------------------------------------------------
+
+### **Caricamenti per spese**
+
+Siano:
+
+* $\Pi^{[\text{T}]}$ premio unico caricato per spese
+* $P^{[\text{T}]}$ premio annuo costante caricato per spese
+* $\Theta^{[\cdot]}$ generico addendo di caricamento del premio unico
+* $\Lambda^{[\cdot]}$ generico addendo di caricamento del premio costante
+
+Si indichino con:
+
+* $[\text{A}]$ riferimento a spese di acquisizione
+* $[\text{C}]$ riferimento a spese di incasso premi
+* $[\text{G}]$ riferimento a spese generali di amministrazione
+
+<br><br>
+
+* **Caricamenti per spese di Acquisizione [A]**
+
+$$
+\Theta^{\text{[A]}} = \alpha C
+$$
+
+$$
+\Lambda^{\text{[A]}} =\frac{\alpha C} {\ddot{a}_{x:s\rceil}}
+$$
+
+* **Caricamenti per spese di Incasso Premi [C]**
+
+$$
+\Theta^{\text{[C]}} =0
+$$
+
+$$
+\Lambda^{\text{[C]}} =\beta P^{\text{[T]}}
+$$
+
+* **Caricamenti per spese Generali di Amministrazione [G]**
+
+$$
+\Theta^{\text{[G]}} = \gamma C\ddot{a}_{x:m\rceil}
+$$
+
+$$
+\Lambda^{\text{[G]}} =\frac{\gamma C\ddot{a}_{x:m\rceil}}{\ddot{a}_{x:s\rceil}}
+$$
+
+* **Premi di Tariffa Netti**
+
+$$
+\Pi^{\text{[T]}}=\Pi + \Theta^{\text{[A]}}+\Theta^{\text{[G]}}=\Pi +\alpha C+\gamma C\ddot{a}_{x:m\rceil}
+$$
+
+$$
+P^{\text{[T]}} =P+\Lambda^{\text{[A]}}+\Lambda^{\text{[C]}}+\Lambda^{\text{[G]}}= \frac{\frac{C}{\ddot{a}_{x:s\rceil}} \left( Tasso \ di \ premio + \alpha + \gamma \ddot{a}_{x:m\rceil} \right)}{1 - \beta}
+$$
+
+Row {data-width=1000}
+-----------------------------------------------------------------------
+
+### **Riserve Matematiche**
+
+**Nota:** per tutti gli esempi verrà utilizzata la temporanea caso morte. Gli altri tipi di assicurazioni seguono una logica del tutto simile, basterà sostituire il tasso di premio con quello per cui si vuole calcolare la riserva.
+
+* **Riserva Prospettiva - Formula Generale**
+
+$$
+V_t=Ben'(t,m)-Prem'(t,m)
+$$
+
+* **Riserve matematiche per premi unici**
+
+Unicamente per l'anno in cui è stato firmato il contratto $t=0$:
+
+$$
+V_t={}_{m}A'_{x}-\Pi \qquad t=0
+$$
+
+Per tutti gli anni successivi, siccome il premio è stato completamente pagato in $t=0$, si avrà che $Prem(t,m)=0$, quindi la riserva sarà unicamente data dal beneficio:
+
+$$
+V_t={}_{m-t}A'_{x+t} \qquad t>0
+$$
+
+* **Riserve matematiche per premi periodici livellati**
+
+Se $s=m$:
+
+$$
+V_t={}_{m-t}A'_{x+t}-P\ddot{a}'_{x+t:m-t\rceil}
+$$
+
+Se $s<m$, vale lo stesso principio visto prima per i premi unici, l'assicurato pagherà i premi per i primi $s$ anni e la riserva sarà data da:
+
+$$
+V_t={}_{m-t}A'_{x+t}-P\ddot{a}'_{x+t:s-t\rceil} \qquad t<s
+$$
+
+Dopo l'anno $s$ l'assicurato non sarà più tenuto a pagare premi e la riserva sarà data solo dal beneficio:
+
+$$
+V_t={}_{m-t}A'_{x+t} \qquad t\geq s
+$$
+
+* **Riserva Matematica Retrospettiva**
+
+$$
+W_t = \frac{1}{{}_t E'_x} \left( \mathrm{Prem}'(0,t) - \mathrm{Ben}'(0,t) \right)
+$$
+
+Row {data-width=1000}
+-----------------------------------------------------------------------
+
+### **Equazioni Ricorrenti per il calcolo dell'Utile Atteso e Cash Flow**
+
+* **Equazione di Fouret**
+
+$$
+V_t + P = C (1 + i')^{-1} q'_{x+t} + V_{t+1} (1 + i')^{-1} p'_{x+t}
+$$
+
+* **Equazione di Kanner**
+
+$$
+(Vt + P) (1 + i') = (C − V_{t+1}) q'_{x+t} + V_{t+1}
+$$
+
+* **Formula di Contribuzione di Homans**
+
+$$
+PL_{t+1}=(V_t + P) (i'' - i') + (C - V_{t+1}) (q'_{x+t} - q''_{x+t})
+$$
+
+$$\overline{PL}_{t+1}^{[\text{fin}]} = (V_t + P)(i'' - i') \ Margine \ Finanziario$$
+
+$$\overline{PL}_{t+1}^{[\text{m/l}]} = (C - V_{t+1})(q'_{x+t} - q''_{x+t}) \ Margine \ Demografico$$
+
+* **Cash Flow**
+
+$$
+\overline{CF}_{t+1} = P (1 + i'') - C q''_{x+t}; \qquad \qquad t = 0, 1, \dots, m-2
+\\\\
+\overline{CF}_m = P (1 + i'') - C q''_{x+m-1} - S p''_{x+m-1} \qquad t=m-1
+$$
+
+Tavole di Mortalità
+=======================================================================
+
+Row {data-width=1000}
+-----------------------------------------------------------------------
+
+###
+Per il calcolo dei premi, riserve e cash flow dei vari contratti assicurativi sono state utilizzate due tavole di mortalità, entrambe consultabili e scaricabili dal sito dell'ISTAT.
+
+* LT2000: [Tavole di mortalità della popolazione residente
+Italia - Maschi e femmine - Anno 2000](https://demo.istat.it/app/?i=TVM&l=it)
+Rappresenta una tavola con una mortalità maggiore, usata come base prudenziale per le assicurazioni caso morte e miste
+
+* LT2025: [Tavole di mortalità della popolazione residente
+Italia - Maschi e femmine - Anno 2025](https://demo.istat.it/app/?i=TVM&l=it)
+Rappresenta una tavola con minore mortalità, usata come base prudenziale per le assicurazioni caso vita e le rendite vitalizie.
+
+```{r tabelle-affiancate, echo=FALSE, message=FALSE, warning=FALSE}
+LT2025 <- data.frame(
+  x = 0:110,
+  lx = c(
+    100000, 99743, 99724, 99710, 99699, 99690, 99682, 99673, 99665, 99658, 99651,
+    99643, 99636, 99627, 99617, 99604, 99589, 99572, 99552, 99529, 99504, 99477,
+    99451, 99424, 99397, 99369, 99341, 99312, 99283, 99252, 99219, 99183, 99146,
+    99107, 99067, 99023, 98977, 98927, 98873, 98813, 98747, 98674, 98596, 98510,
+    98415, 98308, 98189, 98058, 97915, 97758, 97589, 97409, 97214, 97005, 96778,
+    96529, 96256, 95957, 95629, 95271, 94880, 94458, 93994, 93488, 92934, 92324,
+    91648, 90906, 90090, 89201, 88241, 87204, 86069, 84808, 83421, 81875, 80188,
+    78323, 76339, 74180, 71807, 69173, 66310, 63105, 59652, 55952, 52032, 47995,
+    43763, 39333, 34754, 30149, 25638, 21305, 17288, 13699, 10587, 7978, 5860,
+    4186, 2889, 1909, 1194, 710, 399, 212, 105, 49, 21, 9, 3
+  )
+)
+
+LT2000 <- data.frame(
+  x = 0:110,
+  lx = c(
+    100000, 99510, 99481, 99459, 99442, 99428, 99416, 99403, 99391, 99380, 99370,
+    99358, 99346, 99330, 99311, 99287, 99258, 99222, 99178, 99127, 99069, 99008,
+    98945, 98879, 98814, 98750, 98688, 98627, 98565, 98503, 98437, 98370, 98300,
+    98227, 98151, 98073, 97992, 97906, 97814, 97714, 97607, 97493, 97372, 97239,
+    97096, 96940, 96769, 96580, 96369, 96135, 95880, 95604, 95300, 94978, 94630,
+    94243, 93809, 93329, 92790, 92217, 91608, 90946, 90238, 89457, 88593, 87648,
+    86613, 85478, 84227, 82867, 81398, 79799, 78070, 76182, 74125, 71884, 69491,
+    66902, 64143, 61274, 58350, 55289, 51972, 48187, 44063, 39822, 35642, 31701,
+    27919, 24319, 20835, 17545, 14436, 11619, 9134, 6999, 5213, 3761, 2624,
+    1766, 1143, 709, 421, 238, 129, 66, 32, 15, 6, 3, 1
+  )
+)
+
+prepara_tavola_completa <- function(df) {
+  df$dx <- c(-diff(df$lx), df$lx[nrow(df)])
+  df$qx <- df$dx / df$lx
+  df$qx[is.nan(df$qx) | is.infinite(df$qx)] <- 0
+  
+  df$px <- 1 - df$qx
+  
+  colnames(df) <- c("Età x", "lx", "dx", "qx", "px")
+  
+  return(df)
+}
+
+crea_tabella <- function(df, titolo_tabella) {
+  
+  dati_completi <- prepara_tavola_completa(df)
+  
+  dt <- datatable(dati_completi, 
+                  width = "100%", 
+                  class = 'compact stripe hover row-border', 
+                  rownames = FALSE,
+                  caption = htmltools::tags$caption(style = 'caption-side: top; text-align: center; font-weight: bold; color: black;', titolo_tabella),
+                  options = list(
+                    scrollY = "500px",
+                    scrollX = TRUE,
+                    scrollCollapse = TRUE,
+                    paging = FALSE,       
+                    autoWidth = FALSE,
+                    dom = 'ft',           
+                    language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Italian.json'),
+                    initComplete = JS("function(settings, json) { setTimeout(function() { $(window).trigger('resize'); }, 200); }")
+                  )
+  ) %>%
+    formatRound(columns = c("lx", "dx"), digits = 0, mark = ".") %>%
+    formatRound(columns = c("qx", "px"), digits = 5, mark = "", dec.mark = ",")
+  
+  return(dt)
+}
+
+tabella_sinistra <- crea_tabella(LT2000, "Tavola di Mortalità Anno 2000")
+tabella_destra   <- crea_tabella(LT2025, "Tavola di Mortalità Anno 2025")
+
+fluidRow(
+  column(width = 6, tabella_sinistra),
+  column(width = 6, tabella_destra)
+)
+```
+
+Calocolatore Attuariale
+=======================================================================
+
+Row {data-width=1000}
+-----------------------------------------------------------------------
+```{r}
+# =============================================================================
+# 1. FUNZIONI ATTUARIALI
+# =============================================================================
+
+get_lx <- function(df, age) {
+  val <- df$lx[df$x == age]
+  if (length(val) == 0 || is.na(val[1])) return(0)
+  return(val[1])
+}
+
+hpx <- function(df, x, h) {
+  l_x  <- get_lx(df, x)
+  l_xh <- get_lx(df, x + h)
+  if (l_x == 0) return(NA)
+  return(l_xh / l_x)
+}
+
+h_kqx <- function(df, x, h, k) {
+  l_x   <- get_lx(df, x)
+  l_xh  <- get_lx(df, x + h)
+  l_xhk <- get_lx(df, x + h + k)
+  if (l_x == 0) return(NA)
+  return((l_xh - l_xhk) / l_x)
+}
+
+mEx <- function(df, x, m, i) {
+  p_val <- hpx(df, x, h = m)
+  if (is.na(p_val)) return(NA)
+  return(((1 + i)^(-m)) * p_val)
+}
+
+mAx <- function(df, x, m, i) {
+  if (m <= 0) return(0)
+  h_seq <- 0:(m - 1)
+  termini <- sapply(h_seq, function(h) {
+    v_step <- (1 + i)^(-(h + 1))
+    q_step <- h_kqx(df, x, h = h, k = 1)
+    return(v_step * q_step)
+  })
+  if (any(is.na(termini))) return(NA)
+  return(sum(termini))
+}
+
+ax_m <- function(df, x, m, i) {
+  if (m <= 0) return(0)
+  h_seq <- 0:(m - 1)
+  e_vals <- sapply(h_seq, function(h) mEx(df, x, m = h, i = i))
+  if (any(is.na(e_vals))) return(NA)
+  return(sum(e_vals))
+}
+
+ax <- function(df, x, i) {
+  x_max <- max(df$x)
+  if (x > x_max) return(NA)
+  durata_max <- x_max - x + 1
+  return(ax_m(df, x, m = durata_max, i = i))
+}
+
+Ax <- function(df, x, i) {
+  x_max <- max(df$x)
+  if (x >= x_max) return(1)
+  durata_max <- x_max - x + 1
+  return(mAx(df, x, m = durata_max, i = i))
+}
+
+fmt_euro <- function(valore) {
+  if (is.na(valore) || is.infinite(valore)) return("N/D")
+  paste0("€ ", format(round(valore, 2), big.mark = ".", decimal.mark = ",", nsmall = 2))
+}
+
+# ==============================================================================
+# 2. LOGICA UI
+# ==============================================================================
+
+ui <- fluidPage(
+  titlePanel("Calcolatore Premi e Riserve Attuariali"),
+  
+  tags$head(
+    tags$style(HTML("
+      .res-box {
+        padding: 15px;
+        margin-bottom: 15px;
+        border-radius: 6px;
+        color: #ffffff;
+      }
+      .res-box-info { background-color: #17a2b8; }
+      .res-box-primary { background-color: #007bff; }
+      .res-box-success { background-color: #28a745; }
+      .res-box-warning { background-color: #f39c12; }
+      .res-title { font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; opacity: 0.9; }
+      .res-value { font-size: 22px; font-weight: bold; }
+      
+      .math-box {
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding-bottom: 10px;
+      }
+    "))
+  ),
+  
+  sidebarLayout(
+    sidebarPanel(
+      uiOutput("info_tavola"),
+      hr(),
+      
+      selectInput(
+        "prodotto", "Tipo di Prodotto Assicurativo:",
+        choices = c(
+          "Capitale Differito" = "cap_diff",
+          "Temporanea Caso Morte" = "tcm",
+          "Vita Intera Caso Morte" = "vita_intera",
+          "Mista" = "mista",
+          "Rendita Vitalizia Immediata Anticipata" = "rendita_imm",
+          "Rendita Vitalizia Temporanea Anticipata" = "rendita_temp"
+        )
+      ),
+      
+      numericInput("eta", "Età dell'assicurato (x):", value = 40, min = 0, max = 110),
+      
+      conditionalPanel(
+        condition = "input.prodotto != 'vita_intera' && input.prodotto != 'rendita_imm'",
+        numericInput("durata", "Durata contrattuale (m anni):", value = 10, min = 1, max = 80)
+      ),
+      
+      numericInput("durata_premi", "Durata pagamento premi (s anni):", value = 1, min = 1, max = 80),
+      helpText("Nota: s ≤ m (s=1 equivale a Premio Unico)"),
+      
+      numericInput("tasso", "Tasso tecnico di interesse i' (%):", value = 2.0, min = 0.0, max = 15.0, step = 0.1),
+      uiOutput("info_tasso_reale"),
+      
+      hr(),
+      uiOutput("ui_capitale"),
+      
+      hr(),
+      h4("Caricamenti per Spese"),
+      numericInput("alfa", "Acquisizione (α) - consigliato 0,02:", value = 0.02, min = 0, max = 1, step = 0.01),
+      numericInput("beta", "Incasso (β) - consigliato 0,04:", value = 0.04, min = 0, max = 1, step = 0.01),
+      numericInput("gamma", "Gestione (γ) - consigliato 0,001:", value = 0.001, min = 0, max = 1, step = 0.001),
+      hr(),
+      checkboxInput("scomponi_utile", "Scomponi Utile (Finanziario vs Demografico)", value = FALSE)
+    ),
+    
+    mainPanel(
+      fluidRow(
+        column(3,
+               div(class = "res-box res-box-info",
+                   div(class = "res-title", "Tasso di Premio Puro"),
+                   div(class = "res-value", textOutput("tasso_premio"))
+               )
+        ),
+        column(3,
+               div(class = "res-box res-box-primary",
+                   div(class = "res-title", "Premio Unico Puro (Π)"),
+                   div(class = "res-value", textOutput("Π"))
+               )
+        ),
+        column(3,
+               div(class = "res-box res-box-success",
+                   div(class = "res-title", "Premio Periodico Livellato P(s)"),
+                   div(class = "res-value", textOutput("Ps"))
+               )
+        ),
+        column(3,
+               div(class = "res-box res-box-warning",
+                   div(class = "res-title", "Premio di Tariffa (Netto)"),
+                   div(class = "res-value", textOutput("PT"))
+               )
+        )
+      ),
+      
+      hr(),
+      h3("Andamento della Riserva Matematica e degli Utili Attesi"),
+      p("Il grafico mostra l'evoluzione temporale della riserva matematica e degli utili attesi nel corso del contratto."),
+      tabsetPanel(
+        tabPanel("Riserva Matematica", 
+                 br(),
+                 plotlyOutput("plot_riserve", height = "500px")
+        ),
+        tabPanel("Utili Attesi (PL)", 
+                 br(),
+                 plotlyOutput("plot_utili", height = "500px")
+        )
+      ),
+      
+      br(),
+      div(style = "margin-bottom: 20px;",
+          downloadButton("scarica_dati", "Scarica Riserve e Utili (CSV)", class = "btn-success")
+      ),
+      wellPanel(
+        h4("Descrizione del Prodotto"),
+        htmlOutput("dettagli_prodotto")
+      ),
+      
+      wellPanel(
+        h4("Formule dei Premi"),
+        class = "math-box",
+        withMathJax(uiOutput("formule_matematiche"))
+      )
+    )
+  )
+)
+
+# ==============================================================================
+# 3. LOGICA SERVER
+# ==============================================================================
+server <- function(input, output, session) {
+  
+  output$info_tavola <- renderUI({
+    output$info_tasso_reale <- renderUI({
+    req(input$tasso, input$prodotto)
+    i <- input$tasso
+    prod <- input$prodotto
+    
+    # Stessa logica applicata nel calcolo degli utili
+    if (prod %in% c("tcm", "vita_intera", "mista")) {
+      i_reale <- i + 1.0  # +1% per caso morte e miste
+    } else {
+      i_reale <- max(0, i - 1.0) # -1% per caso vita (minimo 0%)
+    }
+    
+    HTML(paste0(
+      "<div style='font-size:12px; color:#555; margin-top:-10px; margin-bottom:10px;'>",
+      "Tasso reale 2° ordine (i''): <strong>", format(i_reale, nsmall = 1, decimal.mark = ","), "%</strong>",
+      "</div>"
+    ))
+  })
+   prod <- input$prodotto
+  if (prod %in% c("tcm", "vita_intera", "mista")) {
+    HTML("<p><strong>Tavola in uso:</strong> LT2000<br><span style='font-size:12px; color:#555;'>(Scelta prudenziale per Caso Morte / Mista)</span></p>
+          <p><strong>Tavola realistica:</strong> LT2025</p>")
+  } else {
+    HTML("<p><strong>Tavola in uso:</strong> LT2025<br><span style='font-size:12px; color:#555;'>(Scelta prudenziale per Caso Vita)</span></p>
+          <p><strong>Tavola realistica:</strong> LT2000</p>")
+  }
+  })
+  
+  observeEvent(input$prodotto, {
+    prod <- input$prodotto
+    if (prod %in% c("rendita_imm", "rendita_temp")) {
+      updateNumericInput(session, "durata_premi", value = 1)
+    } else if (prod != "vita_intera" && !is.null(input$durata)) {
+      updateNumericInput(session, "durata_premi", value = input$durata)
+    }
+  })
+  
+  observeEvent(input$durata, {
+    prod <- input$prodotto
+    if (!prod %in% c("vita_intera", "rendita_imm", "rendita_temp")) {
+      updateNumericInput(session, "durata_premi", value = input$durata)
+    }
+  })
+  
+  output$ui_capitale <- renderUI({
+    prod <- input$prodotto
+    if (prod == "cap_diff") {
+      numericInput("capitale_S", "Capitale Caso Vita assicurato (S €):", value = 100000, min = 1000, step = 1000)
+    } else if (prod %in% c("tcm", "vita_intera")) {
+      numericInput("capitale_C", "Capitale Caso Morte assicurato (C €):", value = 100000, min = 1000, step = 1000)
+    } else if (prod == "mista") {
+      tagList(
+        numericInput("capitale_S", "Capitale Caso Vita (S €):", value = 100000, min = 1000, step = 1000),
+        numericInput("capitale_C", "Capitale Caso Morte (C €):", value = 100000, min = 1000, step = 1000)
+      )
+    } else {
+      numericInput("rata_b", "Rata annua della rendita (b €):", value = 1000, min = 100, step = 100)
+    }
+  })
+  
+  calcolo <- reactive({
+    req(input$eta, input$tasso, input$prodotto, input$durata_premi)
+    req(input$alfa, input$beta, input$gamma)
+    
+    x <- input$eta
+    s <- input$durata_premi
+    i <- input$tasso / 100
+    prod <- input$prodotto
+    
+    alfa <- input$alfa
+    beta <- input$beta
+    gamma <- input$gamma
+    
+    tab <- if (prod %in% c("tcm", "vita_intera", "mista")) LT2000 else LT2025
+    rate <- NA; Π <- NA; Ps <- NA; PT <- NA
+    
+    annuit_s <- if (!is.null(s) && !is.na(s)) ax_m(tab, x, s, i) else NA
+    
+    # Determina durata m per le rendite anticipate m-esime relative alle spese generali
+    x_max <- max(tab$x)
+    m_val <- if (prod %in% c("vita_intera", "rendita_imm")) (x_max - x + 1) else input$durata
+    annuit_m <- ax_m(tab, x, m_val, i)
+    
+    # Definisci il capitale di riferimento per le spese (K_spese)
+    K_spese <- 0
+    if (prod == "cap_diff") {
+      req(input$capitale_S)
+      K_spese <- input$capitale_S
+    } else if (prod %in% c("tcm", "vita_intera")) {
+      req(input$capitale_C)
+      K_spese <- input$capitale_C
+    } else if (prod == "mista") {
+      req(input$capitale_S, input$capitale_C)
+      K_spese <- max(input$capitale_S, input$capitale_C) # Prudenziale
+    } else {
+      req(input$rata_b)
+      K_spese <- input$rata_b
+    }
+    
+    # Calcolo Premi Puri
+    if (prod == "cap_diff") {
+      m <- input$durata
+      if (s > m) return(list(rate = NA, Π = NA, Ps = "Errore: s > m", PT = NA))
+      rate <- mEx(tab, x, m, i)
+      Π <- input$capitale_S * rate
+      Ps <- if (!is.na(annuit_s) && annuit_s > 0) Π / annuit_s else NA
+      
+    } else if (prod == "tcm") {
+      m <- input$durata
+      if (s > m) return(list(rate = NA, Π = NA, Ps = "Errore: s > m", PT = NA))
+      rate <- mAx(tab, x, m, i)
+      Π <- input$capitale_C * rate
+      Ps <- if (!is.na(annuit_s) && annuit_s > 0) Π / annuit_s else NA
+      
+    } else if (prod == "vita_intera") {
+      rate <- Ax(tab, x, i)
+      Π <- input$capitale_C * rate
+      Ps <- if (!is.na(annuit_s) && annuit_s > 0) Π / annuit_s else NA
+      
+    } else if (prod == "mista") {
+      m <- input$durata
+      if (s > m) return(list(rate = NA, Π = NA, Ps = "Errore: s > m", PT = NA))
+      rate_ex <- mEx(tab, x, m, i)
+      rate_ax <- mAx(tab, x, m, i)
+      rate <- rate_ex + rate_ax
+      Π <- (input$capitale_S * rate_ex) + (input$capitale_C * rate_ax)
+      Ps <- if (!is.na(annuit_s) && annuit_s > 0) Π / annuit_s else NA
+      
+    } else if (prod == "rendita_imm") {
+      rate <- ax(tab, x, i)
+      Π <- input$rata_b * rate
+      Ps <- if (!is.na(annuit_s) && annuit_s > 0) Π / annuit_s else NA
+      
+    } else if (prod == "rendita_temp") {
+      m <- input$durata
+      if (s > m) return(list(rate = NA, Π = NA, Ps = "Errore: s > m", PT = NA))
+      rate <- ax_m(tab, x, m, i)
+      Π <- input$rata_b * rate
+      Ps <- if (!is.na(annuit_s) && annuit_s > 0) Π / annuit_s else NA
+    }
+    
+# -------------------------------------------------------------------------
+# Calcolo del Premio Netto (di Tariffa)
+# -------------------------------------------------------------------------
+    if (!is.na(Π) && !is.na(annuit_m)) {
+      if (s == 1) {
+        PT <- Π + (alfa * K_spese) + (gamma * K_spese * annuit_m)
+      } else {
+        if (!is.na(annuit_s) && annuit_s > 0 && beta < 1) {
+          numeratore_PT <- Π + (alfa * K_spese) + (gamma * K_spese * annuit_m)
+          PT <- numeratore_PT / (annuit_s * (1 - beta))
+        }
+      }
+    }
+    
+    list(rate = rate, Π = Π, Ps = Ps, PT = PT)
+  })
+  
+  riserve_df <- reactive({
+    req(calcolo())
+    res <- calcolo()
+    if(is.null(res) || is.na(res$rate)) return(NULL)
+    
+    x <- input$eta
+    s <- input$durata_premi
+    i <- input$tasso / 100
+    prod <- input$prodotto
+    
+    # Basi di 1° Ordine (Tecniche) e 2° Ordine (Reali) preimpostate dinamicamente
+    if (prod %in% c("tcm", "vita_intera", "mista")) {
+      tab <- LT2000
+      tab_reale <- LT2025
+      i_reale <- i + 0.01  # +1% per caso morte e miste
+    } else {
+      tab <- LT2025
+      tab_reale <- LT2000
+      i_reale <- max(0, i - 0.01) # -1% per caso vita (minimo 0%)
+    }
+    
+    x_max <- max(tab$x)
+    
+    m <- if (prod %in% c("vita_intera", "rendita_imm")) (x_max - x) else input$durata
+    req(m)
+    
+    P <- res$Ps
+    if (is.na(P) || is.character(P)) return(NULL)
+    
+    # Capitale Sotto Rischio Caso Morte
+    C_death <- if (prod %in% c("tcm", "vita_intera", "mista")) input$capitale_C else 0
+    
+    k_seq <- 0:m
+    riserve_val <- numeric(length(k_seq))
+    V_term <- numeric(length(k_seq))
+    P_t <- numeric(length(k_seq))
+    PL_val <- numeric(length(k_seq))
+    
+    # CICLO 1: Riserve e Premi incassati
+    for (idx in seq_along(k_seq)) {
+      k <- k_seq[idx]
+      eta_k <- x + k
+      
+      vapf <- if (k < s) P * ax_m(tab, eta_k, m = (s - k), i = i) else 0
+      
+      vaprf <- 0
+      if (prod == "cap_diff") {
+        vaprf <- input$capitale_S * mEx(tab, eta_k, m = (m - k), i = i)
+      } else if (prod == "tcm") {
+        vaprf <- input$capitale_C * mAx(tab, eta_k, m = (m - k), i = i)
+      } else if (prod == "vita_intera") {
+        vaprf <- input$capitale_C * Ax(tab, eta_k, i = i)
+      } else if (prod == "mista") {
+        vaprf <- (input$capitale_S * mEx(tab, eta_k, m = (m - k), i = i)) + 
+          (input$capitale_C * mAx(tab, eta_k, m = (m - k), i = i))
+      } else if (prod == "rendita_imm") {
+        vaprf <- input$rata_b * ax(tab, eta_k, i = i)
+      } else if (prod == "rendita_temp") {
+        vaprf <- input$rata_b * ax_m(tab, eta_k, m = (m - k), i = i)
+      }
+      
+      V_term[idx] <- vaprf - vapf
+      P_t[idx] <- if (k < s) P else 0
+      
+      if (k == 0 && s == 1) {
+        riserve_val[idx] <- res$Π
+      } else {
+        riserve_val[idx] <- V_term[idx]
+      }
+    }
+    
+    # CICLO 2: Calcolo Utili/Perdite (PL)
+
+    PL_val <- rep(NA, length(k_seq))
+    margine_fin_val <- rep(NA, length(k_seq))
+    margine_dem_val <- rep(NA, length(k_seq))
+    
+    for (idx in 2:length(k_seq)) {
+      t <- k_seq[idx - 1]
+      
+      q_primo <- h_kqx(tab, x + t, 0, 1)
+      q_secondo <- h_kqx(tab_reale, x + t, 0, 1)
+      
+      margine_fin <- (V_term[idx - 1] + P_t[idx - 1]) * (i_reale - i)
+      margine_dem <- (C_death - V_term[idx]) * (q_primo - q_secondo)
+      
+      margine_fin_val[idx] <- margine_fin
+      margine_dem_val[idx] <- margine_dem
+      PL_val[idx] <- margine_fin + margine_dem
+    }
+    
+    # Restituisce il dataframe con le due nuove colonne
+    data.frame(
+      k = k_seq,
+      eta_val = x + k_seq,
+      riserva = riserve_val,
+      utile = PL_val,
+      utile_fin = margine_fin_val,
+      utile_dem = margine_dem_val
+    )
+  }) # Fine di riserve_df
+  
+  output$tasso_premio <- renderText({
+    res <- calcolo()$rate
+    if (is.null(res) || is.na(res)) "N/D" else sprintf("%.6f", res)
+  })
+  
+  output$Π <- renderText({ fmt_euro(calcolo()$Π) })
+  
+  output$Ps <- renderText({
+    res <- calcolo()$Ps
+    if (is.null(res)) "N/D"
+    else if (is.character(res)) res
+    else if (is.na(res)) "Non applicabile"
+    else paste0(fmt_euro(res), "")
+  })
+  
+  output$PT <- renderText({
+    res <- calcolo()$PT
+    if (is.null(res)) "N/D"
+    else if (is.character(res)) res
+    else if (is.na(res)) "Non calcolabile"
+    else paste0(fmt_euro(res), "")
+  })
+  
+# -------------------------------------------------------------------------
+# GRAFICO RISERVE
+# -------------------------------------------------------------------------
+  output$plot_riserve <- renderPlotly({
+    df <- riserve_df()
+    req(df)
+    
+    plot_ly(data = df, 
+            x = ~k, 
+            y = ~riserva, 
+            type = 'scatter', 
+            mode = 'markers',
+            marker = list(color = '#007bff', size = 8),
+            hovertemplate = paste(
+              "<b> Anno (t):</b> %{x}<br>",
+              "<b>Età Assicurato:</b> %{customdata}<br>",
+              "<b>Riserva:</b> € %{y:,.2f}",
+              "<extra></extra>"
+            ),
+            customdata = ~eta_val) %>%
+      layout(
+        autosize = TRUE,
+        margin = list(r = 10, t = 30, b = 70),
+        hovermode = "x unified",
+        xaxis = list(
+          title = "Anni trascorsi dalla stipula (t)",
+          tickformat = "d",
+          showgrid = TRUE,
+          gridcolor = 'rgba(211, 211, 211, 0.5)',
+          rangemode = "tozero"
+        ),
+        yaxis = list(
+          title = "Valore della Riserva (€)",
+          exponentformat = "none",
+          tickformat = ",.2f",
+          showgrid = TRUE,
+          gridcolor = 'rgba(211, 211, 211, 0.5)',
+          rangemode = "tozero"
+        )
+      )
+  })
+  
+# -------------------------------------------------------------------------
+# UTILI ATTESI (PL) 
+# -------------------------------------------------------------------------
+  output$plot_utili <- renderPlotly({
+    df <- riserve_df()
+    req(df)
+    
+    # Rimuoviamo il tempo k=0 (dove l'utile non è calcolabile)
+    df_plot <- df[!is.na(df$utile), ]
+    
+    p <- plot_ly(data = df_plot, x = ~k)
+    
+    if (input$scomponi_utile) {
+      p <- p %>%
+        
+        add_trace(y = ~utile_dem, name = 'Margine Demografico', type = 'scatter', mode = 'markers',
+                  marker = list(color = '#17a2b8', size = 8),
+                  hovertemplate = "<b>Margine Demografico:</b> € %{y:,.2f}<extra></extra>",
+                  customdata = ~eta_val) %>%
+        
+        add_trace(y = ~utile_fin, name = 'Margine Finanziario', type = 'scatter', mode = 'markers',
+                  marker = list(color = '#f39c12', size = 8),
+                  hovertemplate = "<b>Margine Finanziario:</b> € %{y:,.2f}<extra></extra>",
+                  customdata = ~eta_val)
+    } else {
+      
+      p <- p %>%
+        add_trace(y = ~utile, name = 'Utile Totale (PL)', type = 'scatter', mode = 'markers',
+                  marker = list(color = '#28a745', size = 8),
+                  hovertemplate = "<b>Anno (k):</b> %{x}<br><b>Età Assicurato:</b> %{customdata}<br><b>Utile Totale:</b> € %{y:,.2f}<extra></extra>",
+                  customdata = ~eta_val)
+    }
+    
+    p %>% layout(
+      autosize = TRUE,
+      margin = list(r = 10, t = 30, b = 70),
+      hovermode = "x unified",
+      xaxis = list(
+        title = "Anni trascorsi dalla stipula (t)",
+        tickformat = "d", showgrid = TRUE, gridcolor = 'rgba(211, 211, 211, 0.5)', rangemode = "tozero"
+      ),
+      yaxis = list(
+        title = "Utile Generato (€)",
+        exponentformat = "none", tickformat = ",.2f", showgrid = TRUE, gridcolor = 'rgba(211, 211, 211, 0.5)'
+      ),
+      legend = list(orientation = 'h', x = 0.5, xanchor = 'center', y = -0.15)
+    )
+  })
+  
+  output$dettagli_prodotto <- renderUI({
+    prod  <- input$prodotto
+    x_val <- input$eta
+    m_val <- input$durata
+    
+    xm_val <- x_val + ifelse(is.null(m_val) || is.na(m_val), 0, m_val)
+    
+    fmt_n <- function(v) {
+      if (is.null(v) || is.na(v)) return("0")
+      format(v, big.mark = ".", decimal.mark = ",")
+    }
+    
+    S_val <- fmt_n(input$capitale_S)
+    C_val <- fmt_n(input$capitale_C)
+    b_val <- fmt_n(input$rata_b)
+    
+    prod_html <- switch(prod,
+        "cap_diff" = paste0(
+          "<b>Tipo di Prodotto:</b> Capitale Differito: Pagamento di ", S_val, " € se l'assicurato è in vita a ", xm_val, " anni."
+        ),
+        "tcm" = paste0(
+          "<b>Tipo di Prodotto:</b> Temporanea Caso Morte (TCM): Pagamento di ", C_val, " € in caso di decesso dell'assicurato entro l'età di ", xm_val, " anni."
+        ),
+        "vita_intera" = paste0(
+          "<b>Tipo di Prodotto:</b> Vita Intera Caso Morte: Pagamento di ", C_val, " € alla morte dell'assicurato."
+        ),
+        "mista" = paste0(
+          "<b>Tipo di Prodotto:</b> Mista: Pagamento di ", S_val, " € in caso di vita a ", xm_val, " anni o di ", C_val, " € in caso di decesso entro l'età di ", xm_val, " anni."
+        ),
+        "rendita_imm" = paste0(
+          "<b>Tipo di Prodotto:</b> Rendita Vitalizia Immediata Anticipata: Pagamento di una rata annua di ", b_val, " € finché l'assicurato (età iniziale ", x_val, ") è in vita."
+        ),
+        "rendita_temp" = paste0(
+          "<b>Tipo di Prodotto:</b> Rendita Vitalizia Temporanea Anticipata: Pagamento di una rata annua di ", b_val, " € fino all'età di ", xm_val, " anni (per massimo ", m_val, " anni)."
+        )
+    )
+    
+    HTML(prod_html)
+  })
+  
+# PANNELLO FORMULE DINAMICHE CON MATHJAX
+  output$formule_matematiche <- renderUI({
+    res <- calcolo()
+    req(res)
+    if (is.na(res$rate)) return(NULL)
+    
+    prod <- input$prodotto
+    x <- input$eta
+    s <- input$durata_premi
+    m <- input$durata
+    
+    alfa <- input$alfa
+    beta <- input$beta
+    gamma <- input$gamma
+    
+    K <- 0
+    if (prod == "cap_diff") { K <- input$capitale_S } 
+    else if (prod %in% c("tcm", "vita_intera")) { K <- input$capitale_C } 
+    else if (prod == "mista") { K <- max(input$capitale_S, input$capitale_C) } 
+    else { K <- input$rata_b }
+    
+    fmt_num <- function(v) {
+      if(is.null(v) || is.na(v)) return("0")
+      format(v, nsmall = 0, big.mark = "", decimal.mark = ",")
+    }
+    
+    K_val <- fmt_num(K)
+    S_val <- fmt_num(input$capitale_S)
+    C_val <- fmt_num(input$capitale_C)
+    
+    Pi_val <- format(round(res$Π, 2), nsmall = 2, big.mark = "", decimal.mark = ",")
+    Ps_val <- format(round(res$Ps, 2), nsmall = 2, big.mark = "", decimal.mark = ",")
+    PT_val <- if(is.numeric(res$PT)) format(round(res$PT, 2), nsmall = 2, big.mark = "", decimal.mark = ",") else res$PT
+    
+    alfa_val <- format(alfa, decimal.mark = ",")
+    beta_val <- format(beta, decimal.mark = ",")
+    gamma_val <- format(gamma, decimal.mark = ",")
+    
+    v_base <- format(1 + input$tasso/100, decimal.mark = ",", scientific = FALSE)
+    
+    E_str <- paste0(v_base, "^{-", m, "}  {}_{", m, "}p_{", x, "}")
+    A_str <- paste0("\\sum_{h=0}^{", m-1, "} ", v_base, "^{-(h+1)}  {}_{h|1}q_{", x, "}")
+    A_vi_str <- paste0("\\sum_{h=0}^{\\omega-", x, "} ", v_base, "^{-(h+1)}  {}_{h|1}q_{", x, "}")
+    a_str <- paste0("\\sum_{h=0}^{\\omega-", x, "} ", v_base, "^{-h}  {}_{h}p_{", x, "}")
+    a_m_str <- paste0("\\sum_{h=0}^{", m-1, "} ", v_base, "^{-h}  {}_{h}p_{", x, "}")
+    a_s_str <- paste0("\\sum_{h=0}^{", s-1, "} ", v_base, "^{-h}  {}_{h}p_{", x, "}")
+    
+    sym_pure_val <- ""
+    rate_str <- "" # Stringa per il tasso di premio puro da mettere in parentesi
+    
+    if (prod == "cap_diff") {
+      sym_pure_val <- paste0("\\Pi = ", K_val, " \\cdot ", E_str)
+      rate_str <- E_str
+    } else if (prod == "tcm") {
+      sym_pure_val <- paste0("\\Pi = ", K_val, " ", A_str)
+      rate_str <- A_str
+    } else if (prod == "vita_intera") {
+      sym_pure_val <- paste0("\\Pi = ", K_val, " ", A_vi_str)
+      rate_str <- A_vi_str
+    } else if (prod == "mista") {
+      sym_pure_val <- paste0("\\Pi = ", S_val, " \\cdot ", E_str, " + ", C_val, " ", A_str)
+      # Se i capitali sono uguali il K è raccolto direttamente a fattor comune
+      if (input$capitale_S == input$capitale_C) {
+        rate_str <- paste0(E_str, " + ", A_str)
+      } else {
+        rate_str <- paste0("\\frac{", S_val, "}{", K_val, "} ", E_str, " + \\frac{", C_val, "}{", K_val, "} ", A_str)
+      }
+    } else if (prod == "rendita_imm") {
+      sym_pure_val <- paste0("\\Pi = ", K_val, " ", a_str)
+      rate_str <- a_str
+    } else if (prod == "rendita_temp") {
+      sym_pure_val <- paste0("\\Pi = ", K_val, " ", a_m_str)
+      rate_str <- a_m_str
+    }
+    
+    sym_a_gamma_val <- if(prod %in% c("vita_intera", "rendita_imm")) a_str else a_m_str
+    
+    html_content <- paste0("$$ ", sym_pure_val, " = ", Pi_val, " $$")
+    
+    if (s > 1) {
+      html_content <- paste0(html_content, 
+        "$$ P = \\frac{", Pi_val, "}{", a_s_str, "} = ", Ps_val, " $$"
+      )
+    }
+    
+    if (s == 1) {
+      html_content <- paste0(html_content, 
+        "$$ \\Pi^{\\text{[T]}} = ", Pi_val, " + ", alfa_val, " \\cdot ", K_val, " + ", gamma_val, " \\cdot ", K_val, " ", sym_a_gamma_val, " = ", PT_val, " $$"
+      )
+    } else {
+      # Struttura fattorizzata per il Premio di Tariffa (P^T) periodico
+      html_content <- paste0(html_content, 
+        "$$ P^{\\text{[T]}} = \\frac{ \\frac{", K_val, "}{", a_s_str, "} \\left( ", rate_str, " + ", alfa_val, " + ", gamma_val, " ", sym_a_gamma_val, " \\right) }{ 1 - ", beta_val, " } = ", PT_val, " $$"
+      )
+    }
+    
+    HTML(paste0(
+      html_content, 
+      "<script>if (window.MathJax) MathJax.Hub.Queue(['Typeset', MathJax.Hub]);</script>"
+    ))
+  })
+  
+# -------------------------------------------------------------------------
+# GESTIONE DOWNLOAD CSV
+# -------------------------------------------------------------------------
+  output$scarica_dati <- downloadHandler(
+    filename = function() {
+      # Crea un nome file dinamico basato sul prodotto scelto e la data odierna
+      paste0("simulazione_", input$prodotto, "_eta_", input$eta, "_", Sys.Date(), ".csv")
+    },
+    content = function(file) {
+      df <- riserve_df()
+      req(df)
+      
+      # Prepara un dataframe pulito con intestazioni esplicative
+      df_export <- data.frame(
+        Anno_t             = df$k,
+        Eta_Assicurato     = df$eta_val,
+        Riserva_Matematica = round(df$riserva, 2),
+        Utile_Totale_PL    = round(df$utile, 2),
+        Margine_Demografico = round(df$utile_dem, 2),
+        Margine_Finanziario = round(df$utile_fin, 2)
+      )
+      
+      # Scrive il file CSV usando write.csv2 (separatore ';' e virgola decimale, perfetti per Excel in Italia)
+      write.csv2(df_export, file, row.names = FALSE, fileEncoding = "UTF-8")
+    }
+  )
+}
+
+# ==============================================================================
+# 4. AVVIO DELL'APP
+# ==============================================================================
+shinyApp(ui = ui, server = server)
+```
