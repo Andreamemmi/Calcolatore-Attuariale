@@ -510,6 +510,8 @@ ui <- fluidPage(
         numericInput("durata", "Durata contrattuale (m anni):", value = 10, min = 1, max = 80)
       ),
       
+      uiOutput("warning_eta_limite"),
+      
       numericInput("durata_premi", "Durata pagamento premi (s anni):", value = 1, min = 1, max = 80),
       helpText("Nota: s ≤ m (s=1 equivale a Premio Unico)"),
       
@@ -628,6 +630,28 @@ server <- function(input, output, session) {
       updateNumericInput(session, "durata_premi", value = 1)
     } else if (prod != "vita_intera" && !is.null(input$durata)) {
       updateNumericInput(session, "durata_premi", value = input$durata)
+    }
+  })
+  
+  # -------------------------------------------------------------------------
+  # CONTROLLO ETÀ ESTREMA (x + m > 110)
+  # -------------------------------------------------------------------------
+  output$warning_eta_limite <- renderUI({
+    req(input$eta, input$prodotto)
+    
+    # Il controllo ha senso solo per i contratti in cui si inserisce una durata m
+    if (!input$prodotto %in% c("vita_intera", "rendita_imm")) {
+      req(input$durata)
+      
+      eta_fine <- input$eta + input$durata
+      
+      if (eta_fine > 110) {
+        HTML(paste0(
+          "<div style='color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 10px; border-radius: 4px; margin-top: 10px; margin-bottom: 10px; font-size: 13px;'>",
+          "<b>⚠️ Attenzione:</b> L'età a fine contratto (<strong>", eta_fine, " anni</strong>) supera l'età estrema &omega; della tavola di mortalità (110 anni). Le probabilità di sopravvivenza per le età successive saranno matematicamente nulle.",
+          "</div>"
+        ))
+      }
     }
   })
   
