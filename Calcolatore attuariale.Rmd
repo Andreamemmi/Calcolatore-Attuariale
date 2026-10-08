@@ -380,7 +380,7 @@ fluidRow(
 )
 ```
 
-Calocolatore Attuariale
+Calcolatore Attuariale
 =======================================================================
 
 Row {data-width=1000}
